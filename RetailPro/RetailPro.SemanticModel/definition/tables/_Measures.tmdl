@@ -1,0 +1,84 @@
+table _Measures
+	lineageTag: 4de3a791e71d4091b1fd
+
+	measure 'Total Revenue' = SUM(retailpro_sales[revenue])
+
+		formatString: #,0
+
+	measure 'Transactions Count' = COUNTROWS(retailpro_sales)
+
+		formatString: #,0
+
+	measure 'Average Check' = DIVIDE([Total Revenue], [Transactions Count])
+
+		formatString: #,0
+
+	measure 'Returns Count' = SUMX(retailpro_sales, IF(retailpro_sales[is_return_or_cancel] = 1, 1, 0))
+
+		formatString: #,0
+
+	measure 'Returns %' = DIVIDE([Returns Count], [Transactions Count])
+
+		formatString: 0.0%
+
+	measure 'Previous Month Revenue' = CALCULATE([Total Revenue], DATEADD(Calendar[Date], -1, MONTH))
+
+		formatString: #,0
+
+	measure 'Revenue MoM Growth %' = DIVIDE([Total Revenue] - [Previous Month Revenue], [Previous Month Revenue])
+
+		formatString: +0.0%;-0.0%;0.0%
+
+	measure 'Previous Month Transactions' = CALCULATE([Transactions Count], DATEADD(Calendar[Date], -1, MONTH))
+
+	measure 'Transactions MoM Growth %' = DIVIDE([Transactions Count] - [Previous Month Transactions], [Previous Month Transactions])
+
+		formatString: +0.0%;-0.0%;0.0%
+
+	measure 'Previous Month Average Check' = CALCULATE([Average Check], DATEADD(Calendar[Date], -1, MONTH))
+
+	measure 'Average Check MoM Growth %' = DIVIDE([Average Check] - [Previous Month Average Check], [Previous Month Average Check])
+
+		formatString: +0.0%;-0.0%;0.0%
+
+	measure 'Revenue MoM Label' =
+		VAR P = [Revenue MoM Growth %]
+		RETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")
+
+	measure 'Transactions MoM Label' =
+		VAR P = [Transactions MoM Growth %]
+		RETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")
+
+	measure 'Average Check MoM Label' =
+		VAR P = [Average Check MoM Growth %]
+		RETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")
+
+	measure 'Top 5 Categories Share %' =
+		VAR Top5Rev = SUMX(TOPN(5, ADDCOLUMNS(VALUES(retailpro_sales[category]), "@Rev", CALCULATE([Total Revenue])), [@Rev], DESC), [@Rev])
+		RETURN DIVIDE(Top5Rev, [Total Revenue])
+
+		formatString: 0.0%
+
+	measure 'Top 5 Category Revenue' =
+		VAR Rank = RANKX(ALLSELECTED(retailpro_sales[category]), CALCULATE([Total Revenue]), , DESC, DENSE)
+		RETURN IF(Rank <= 5, [Total Revenue])
+
+		formatString: #,0
+
+	measure 'Regions Share %' = DIVIDE([Total Revenue], CALCULATE([Total Revenue], ALLSELECTED(retailpro_sales[region])))
+
+		formatString: 0.0%
+
+	measure 'Insight Region Leader' =
+		VAR T = TOPN(1, ADDCOLUMNS(VALUES(retailpro_sales[region]), "@R", CALCULATE([Total Revenue])), [@R], DESC)
+		RETURN "Регион «" & MAXX(T, retailpro_sales[region]) & "» лидирует по выручке (" & FORMAT(DIVIDE(MAXX(T, [@R]), [Total Revenue]), "0.0%") & ")."
+
+	measure 'Insight Average Check MoM' =
+		VAR P = [Average Check MoM Growth %]
+		VAR D = IF(P >= 0, "вырос", "снизился")
+		RETURN IF(ISBLANK(P), "Недостаточно данных для сравнения среднего чека.", "Средний чек " & D & " на " & FORMAT(ABS(P), "0.0%") & " к пред. месяцу.")
+
+	measure 'Insight Returns' =
+		VAR Target = 0.05
+		VAR Actual = [Returns %]
+		RETURN IF(Actual <= Target, "Доля возвратов/отмен (" & FORMAT(Actual, "0.0%") & ") ниже целевого уровня (5%).", "Доля возвратов/отмен (" & FORMAT(Actual, "0.0%") & ") превышает целевой уровень (5%).")

@@ -1,0 +1,11 @@
+role 'Руководитель'
+	modelPermission: read
+
+	tablePermission retailpro_sales =
+		VAR AllowedRegion =
+			CALCULATE(
+				MAX(UserAccess[region]),
+				UserAccess[user_login] = USERNAME(),
+				UserAccess[role] = "Руководитель"
+			)
+		RETURN retailpro_sales[region] = AllowedRegion

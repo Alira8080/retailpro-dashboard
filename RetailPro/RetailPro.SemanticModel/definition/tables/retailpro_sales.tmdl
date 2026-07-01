@@ -1,0 +1,75 @@
+table retailpro_sales
+	lineageTag: fb7f8ab6c58e4638b692
+
+	column date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 977a1e671302429ab291
+		summarizeBy: none
+		sourceColumn: date
+
+	column region
+		dataType: string
+		lineageTag: e02a343cb24c495295c1
+		summarizeBy: none
+		sourceColumn: region
+
+	column category
+		dataType: string
+		lineageTag: fbc0d6db00ac4fbaa731
+		summarizeBy: none
+		sourceColumn: category
+
+	column manager
+		dataType: string
+		lineageTag: 52a5aaf061ec463dbb5d
+		summarizeBy: none
+		sourceColumn: manager
+
+	column revenue
+		dataType: double
+		formatString: #,0
+		lineageTag: 97e6f4c7524b402fac4e
+		sourceColumn: revenue
+
+	column quantity
+		dataType: int64
+		lineageTag: d573bb2193b04d1aa72a
+		sourceColumn: quantity
+
+	column discount_amount
+		dataType: double
+		lineageTag: 4a97d8cd537d4df49d0b
+		sourceColumn: discount_amount
+
+	column status
+		dataType: string
+		lineageTag: d7895bb6a5b9417f88f8
+		sourceColumn: status
+
+	column returns
+		dataType: int64
+		lineageTag: 09aa245a145347169dca
+		sourceColumn: returns
+
+	column week_start
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 83c2ed30de2049b09a04
+		summarizeBy: none
+		sourceColumn: week_start
+
+	column is_return_or_cancel
+		dataType: int64
+		lineageTag: 1ce9bb0e122c4efd907d
+		sourceColumn: is_return_or_cancel
+
+	partition retailpro_sales = m
+		mode: import
+		source =
+			let
+				Source = Csv.Document(File.Contents("..\..\powerbi_data\retailpro_sales.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.None]),
+				#"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				#"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers", {{"date", type date}, {"region", type text}, {"category", type text}, {"manager", type text}, {"revenue", type number}, {"quantity", Int64.Type}, {"discount_amount", type number}, {"status", type text}, {"returns", Int64.Type}, {"week_start", type date}, {"is_return_or_cancel", Int64.Type}})
+			in
+				#"Changed Type"

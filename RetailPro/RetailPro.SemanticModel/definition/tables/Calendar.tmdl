@@ -1,0 +1,36 @@
+table Calendar
+	dataCategory: Time
+	lineageTag: c2d7b6812ff5437f8ce6
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		isKey
+		lineageTag: 793ebb58a73d4e71b443
+		summarizeBy: none
+		sourceColumn: Date
+
+	column Year
+		dataType: int64
+		lineageTag: 4c7a2abade734534b160
+		sourceColumn: Year
+
+	column Month
+		dataType: int64
+		lineageTag: 5350b2117b634d86957e
+		sourceColumn: Month
+
+	column YearMonth
+		dataType: string
+		lineageTag: 0ea688fe7f764fee9d39
+		sourceColumn: YearMonth
+
+	partition Calendar = m
+		mode: import
+		source =
+			let
+				Source = Csv.Document(File.Contents("..\..\powerbi_data\Calendar.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.None]),
+				#"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				#"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers", {{"Date", type date}, {"Year", Int64.Type}, {"Month", Int64.Type}, {"YearMonth", type text}})
+			in
+				#"Changed Type"

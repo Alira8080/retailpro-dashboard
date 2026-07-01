@@ -1,0 +1,2 @@
+role 'Коммерческий директор'
+	modelPermission: read

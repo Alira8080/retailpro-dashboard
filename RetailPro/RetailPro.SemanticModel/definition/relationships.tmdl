@@ -1,0 +1,3 @@
+relationship 9cf40fabb91b4d02b6af
+	fromColumn: retailpro_sales.date
+	toColumn: Calendar.Date

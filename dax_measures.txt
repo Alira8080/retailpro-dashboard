@@ -1,0 +1,94 @@
+// RetailPro — все DAX-меры для дашборда
+// Модель: Calendar[Date] -> retailpro_sales[date] (Many-to-One, Single)
+
+// ── KPI ──────────────────────────────────────────────────────────
+
+Total Revenue = SUM ( retailpro_sales[revenue] )
+
+Transactions Count = COUNTROWS ( retailpro_sales )
+
+Average Check = DIVIDE ( [Total Revenue], [Transactions Count] )
+
+Returns Count =
+SUMX ( retailpro_sales, IF ( retailpro_sales[is_return_or_cancel] = 1, 1, 0 ) )
+
+Returns % = DIVIDE ( [Returns Count], [Transactions Count] )
+
+// ── MoM (динамика к предыдущему месяцу) ─────────────────────────
+
+Previous Month Revenue =
+CALCULATE ( [Total Revenue], DATEADD ( Calendar[Date], -1, MONTH ) )
+
+Revenue MoM Growth % =
+DIVIDE ( [Total Revenue] - [Previous Month Revenue], [Previous Month Revenue] )
+
+Previous Month Transactions =
+CALCULATE ( [Transactions Count], DATEADD ( Calendar[Date], -1, MONTH ) )
+
+Transactions MoM Growth % =
+DIVIDE ( [Transactions Count] - [Previous Month Transactions], [Previous Month Transactions] )
+
+Previous Month Average Check =
+CALCULATE ( [Average Check], DATEADD ( Calendar[Date], -1, MONTH ) )
+
+Average Check MoM Growth % =
+DIVIDE ( [Average Check] - [Previous Month Average Check], [Previous Month Average Check] )
+
+// ── Доли ────────────────────────────────────────────────────────
+
+Top 5 Categories Share % =
+VAR Top5Rev =
+    SUMX (
+        TOPN (
+            5,
+            ADDCOLUMNS ( VALUES ( retailpro_sales[category] ), "@Rev", CALCULATE ( [Total Revenue] ) ),
+            [@Rev], DESC
+        ),
+        [@Rev]
+    )
+RETURN DIVIDE ( Top5Rev, [Total Revenue] )
+
+Regions Share % =
+DIVIDE ( [Total Revenue], CALCULATE ( [Total Revenue], ALLSELECTED ( retailpro_sales[region] ) ) )
+
+Top 5 Category Revenue =
+VAR Rank =
+    RANKX ( ALLSELECTED ( retailpro_sales[category] ), CALCULATE ( [Total Revenue] ), , DESC, DENSE )
+RETURN IF ( Rank <= 5, [Total Revenue] )
+
+// ── Подписи для KPI-карточек ────────────────────────────────────
+
+Revenue MoM Label =
+VAR P = [Revenue MoM Growth %]
+RETURN IF ( ISBLANK ( P ), "н/д", FORMAT ( P, "+0.0%;-0.0%;0.0%" ) & " к пред. мес." )
+
+Transactions MoM Label =
+VAR P = [Transactions MoM Growth %]
+RETURN IF ( ISBLANK ( P ), "н/д", FORMAT ( P, "+0.0%;-0.0%;0.0%" ) & " к пред. мес." )
+
+Average Check MoM Label =
+VAR P = [Average Check MoM Growth %]
+RETURN IF ( ISBLANK ( P ), "н/д", FORMAT ( P, "+0.0%;-0.0%;0.0%" ) & " к пред. мес." )
+
+// ── Блок «Выводы» (текстовые карточки) ──────────────────────────
+
+Insight Region Leader =
+VAR T = TOPN ( 1, ADDCOLUMNS ( VALUES ( retailpro_sales[region] ), "@R", CALCULATE ( [Total Revenue] ) ), [@R], DESC )
+RETURN
+    "Регион «" & MAXX ( T, retailpro_sales[region] ) & "» лидирует по выручке ("
+        & FORMAT ( DIVIDE ( MAXX ( T, [@R] ), [Total Revenue] ), "0.0%" ) & ")."
+
+Insight Average Check MoM =
+VAR P = [Average Check MoM Growth %]
+VAR D = IF ( P >= 0, "вырос", "снизился" )
+RETURN
+    IF ( ISBLANK ( P ), "Недостаточно данных для сравнения среднего чека.",
+         "Средний чек " & D & " на " & FORMAT ( ABS ( P ), "0.0%" ) & " к пред. месяцу." )
+
+Insight Returns =
+VAR Target = 0.05
+VAR Actual = [Returns %]
+RETURN
+    IF ( Actual <= Target,
+         "Доля возвратов/отмен (" & FORMAT ( Actual, "0.0%" ) & ") ниже целевого уровня (5%).",
+         "Доля возвратов/отмен (" & FORMAT ( Actual, "0.0%" ) & ") превышает целевой уровень (5%)." )

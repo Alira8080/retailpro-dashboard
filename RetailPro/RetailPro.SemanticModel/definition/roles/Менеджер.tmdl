@@ -1,0 +1,11 @@
+role 'Менеджер'
+	modelPermission: read
+
+	tablePermission retailpro_sales =
+		VAR AllowedManager =
+			CALCULATE(
+				MAX(UserAccess[manager]),
+				UserAccess[user_login] = USERNAME(),
+				UserAccess[role] = "Менеджер"
+			)
+		RETURN retailpro_sales[manager] = AllowedManager

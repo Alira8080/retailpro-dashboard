@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+_pbip_template/
+_test_powerbi/
+RetailPro_Delivery/
+RetailPro_Delivery.zip
+.env
+*.pbix

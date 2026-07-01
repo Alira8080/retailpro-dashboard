@@ -1,0 +1,12 @@
+﻿user_login,role,manager,region
+иванов@retailpro.local,Менеджер,Иванов,
+козлов@retailpro.local,Менеджер,Козлов,
+морозова@retailpro.local,Менеджер,Морозова,
+петров@retailpro.local,Менеджер,Петров,
+сидорова@retailpro.local,Менеджер,Сидорова,
+head.москва@retailpro.local,Руководитель,,Москва
+head.спб@retailpro.local,Руководитель,,СПб
+head.сибирь@retailpro.local,Руководитель,,Сибирь
+head.урал@retailpro.local,Руководитель,,Урал
+head.юг@retailpro.local,Руководитель,,Юг
+director@retailpro.local,Коммерческий директор,,

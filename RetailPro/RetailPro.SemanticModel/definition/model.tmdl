@@ -1,0 +1,18 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+	annotation __PBI_TimeIntelligenceEnabled = 1
+	annotation PBI_ProTooling = ["DevMode"]
+
+	ref cultureInfo en-US
+	ref table retailpro_sales
+	ref table Calendar
+	ref table UserAccess
+	ref table _Measures
+	ref role 'Менеджер'
+	ref role 'Руководитель'
+	ref role 'Коммерческий директор'

@@ -1,0 +1,32 @@
+table UserAccess
+	lineageTag: 7553a232b2334d899ac2
+
+	column user_login
+		dataType: string
+		lineageTag: 28b5e8b322084c45ae73
+		sourceColumn: user_login
+
+	column role
+		dataType: string
+		lineageTag: 5ca50b36a4a64c7ab23d
+		sourceColumn: role
+
+	column manager
+		dataType: string
+		lineageTag: 42a658b1c356410e8d5f
+		sourceColumn: manager
+
+	column region
+		dataType: string
+		lineageTag: 4abcde875731460fa301
+		sourceColumn: region
+
+	partition UserAccess = m
+		mode: import
+		source =
+			let
+				Source = Csv.Document(File.Contents("..\..\powerbi_data\UserAccess.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.None]),
+				#"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				#"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers", {{"user_login", type text}, {"role", type text}, {"manager", type text}, {"region", type text}})
+			in
+				#"Changed Type"

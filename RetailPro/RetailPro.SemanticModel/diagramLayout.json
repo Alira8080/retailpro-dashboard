@@ -1,0 +1,50 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 0,
+            "y": 0
+          },
+          "nodeIndex": "retailpro_sales",
+          "size": {
+            "height": 300,
+            "width": 234
+          }
+        },
+        {
+          "location": {
+            "x": 300,
+            "y": 0
+          },
+          "nodeIndex": "Calendar",
+          "size": {
+            "height": 200,
+            "width": 234
+          }
+        },
+        {
+          "location": {
+            "x": 150,
+            "y": 350
+          },
+          "nodeIndex": "_Measures",
+          "size": {
+            "height": 104,
+            "width": 234
+          }
+        }
+      ],
+      "name": "All tables"
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}
