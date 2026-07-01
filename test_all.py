@@ -56,17 +56,20 @@ def main() -> int:
     else:
         ok(f"Период: {df['date'].min().date()} — {df['date'].max().date()}")
 
-    required_derived = {"week_start", "is_return_or_cancel"}
+    required_derived = {"week_start", "is_return_or_cancel", "is_application", "is_sale"}
     if not required_derived.issubset(df.columns):
         fail(f"Нет полей: {required_derived - set(df.columns)}")
     else:
-        ok("Производные поля week_start, is_return_or_cancel")
+        ok("Производные поля week_start, is_return_or_cancel, is_application, is_sale")
 
     # 3. Метрики — сверка с ручным расчётом
     m = calc_metrics(df)
     manual_rev = float(df["revenue"].sum())
-    manual_tx = len(df)
-    manual_avg = manual_rev / manual_tx
+    manual_apps = len(df)
+    manual_sales = int(df["is_sale"].sum())
+    manual_sales_rev = float(df.loc[df["is_sale"] == 1, "revenue"].sum())
+    manual_conv = manual_sales / manual_apps * 100 if manual_apps else 0
+    manual_avg = manual_sales_rev / manual_sales if manual_sales else 0
     manual_ret = int(df["is_return_or_cancel"].sum())
 
     if abs(m["total_revenue"] - manual_rev) > 0.01:
@@ -74,10 +77,20 @@ def main() -> int:
     else:
         ok(f"Выручка: {manual_rev:,.0f}")
 
-    if m["transactions_count"] != manual_tx:
-        fail("Транзакции не совпадают")
+    if m["applications_count"] != manual_apps:
+        fail("Заявки не совпадают")
     else:
-        ok(f"Транзакции: {manual_tx}")
+        ok(f"Заявки: {manual_apps}")
+
+    if m["sales_count"] != manual_sales:
+        fail("Продажи не совпадают")
+    else:
+        ok(f"Продажи: {manual_sales}")
+
+    if abs(m["conversion_pct"] - manual_conv) > 0.01:
+        fail(f"Конверсия: {m['conversion_pct']} != {manual_conv}")
+    else:
+        ok(f"Конверсия: {manual_conv:.1f}%")
 
     if abs(m["average_check"] - manual_avg) > 0.01:
         fail("Средний чек не совпадает")
@@ -113,7 +126,7 @@ def main() -> int:
     # 5. Power BI export
     pbi_dir = ROOT / "_test_powerbi"
     export_powerbi_package(df, pbi_dir)
-    for name in ("retailpro_sales.csv", "Calendar.csv", "Detail.csv", "retailpro_detail.xlsx"):
+    for name in ("retailpro_sales.csv", "Calendar.csv", "Detail.csv", "retailpro_detail.xlsx", "UserAccess.csv"):
         p = pbi_dir / name
         if not p.exists() or p.stat().st_size == 0:
             fail(f"Не создан {name}")
@@ -126,12 +139,35 @@ def main() -> int:
     else:
         ok(f"Calendar: {len(cal)} дней")
 
-    # 6. DAX файл
+    # 6. Пакет приёмки
+    acc_dir = ROOT / "acceptance_package"
+    for name in (
+        "01_ПОДГОТОВКА_ДАННЫХ.txt",
+        "02_ПРОВЕРКА_KPI.txt",
+        "03_ФИЛЬТРЫ_И_ГРАФИКИ.txt",
+        "04_УПРАВЛЕНЧЕСКОЕ_РЕЗЮМЕ.txt",
+        "ПАКЕТ_ПРИЕМКИ.txt",
+        "acceptance_summary.json",
+    ):
+        p = acc_dir / name
+        if not p.exists() or p.stat().st_size == 0:
+            fail(f"Нет файла приёмки: {name}")
+        else:
+            ok(f"acceptance_package/{name}")
+
+    kpi_doc = (acc_dir / "02_ПРОВЕРКА_KPI.txt").read_text(encoding="utf-8")
+    if "РАСХОЖДЕНИЕ" in kpi_doc:
+        fail("В отчёте KPI есть расхождения")
+    else:
+        ok("Сверка KPI в пакете приёмки: OK")
+
+    # 7. DAX файл
     dax = ROOT / "dax_measures.txt"
     required_measures = [
-        "Total Revenue", "Transactions Count", "Average Check",
-        "Returns Count", "Returns %", "Previous Month Revenue",
+        "Total Revenue", "Applications Count", "Sales Count", "Conversion %",
+        "Average Check", "Returns Count", "Returns %", "Previous Month Revenue",
         "Revenue MoM Growth %", "Top 5 Categories Share %", "Regions Share %",
+        "Insight Region Leader", "Insight Average Check MoM", "Insight Conversion",
     ]
     dax_text = dax.read_text(encoding="utf-8")
     for measure in required_measures:
@@ -140,21 +176,21 @@ def main() -> int:
         else:
             ok(f"DAX: {measure}")
 
-    # 7. Инструкция Power BI
+    # 8. Инструкция Power BI
     guide = ROOT / "power_bi_visuals.txt"
     if not guide.exists():
         fail("power_bi_visuals.txt отсутствует")
     else:
         ok("power_bi_visuals.txt")
 
-    # 8. Dashboard import
+    # 9. Dashboard import
     try:
         import dashboard  # noqa: F401
         ok("dashboard.py импортируется")
     except Exception as e:
         fail(f"dashboard.py: {e}")
 
-    # 9. Power BI PBIP project
+    # 10. Power BI PBIP project
     pbip = ROOT / "RetailPro" / "RetailPro.pbip"
     if not pbip.exists():
         fail("RetailPro.pbip не найден — запустите: python build_powerbi_project.py")

@@ -1,15 +1,31 @@
 table _Measures
-	lineageTag: 4de3a791e71d4091b1fd
+	lineageTag: 1ee95d74862f4ee390dc
 
 	measure 'Total Revenue' = SUM(retailpro_sales[revenue])
 
 		formatString: #,0
 
-	measure 'Transactions Count' = COUNTROWS(retailpro_sales)
+	measure 'Applications Count' = COUNTROWS(retailpro_sales)
 
 		formatString: #,0
 
-	measure 'Average Check' = DIVIDE([Total Revenue], [Transactions Count])
+	measure 'Sales Count' = SUM(retailpro_sales[is_sale])
+
+		formatString: #,0
+
+	measure 'Sales Revenue' = SUMX(retailpro_sales, IF(retailpro_sales[is_sale] = 1, retailpro_sales[revenue], 0))
+
+		formatString: #,0
+
+	measure 'Conversion %' = DIVIDE([Sales Count], [Applications Count])
+
+		formatString: 0.0%
+
+	measure 'Average Check' = DIVIDE([Sales Revenue], [Sales Count])
+
+		formatString: #,0
+
+	measure 'Transactions Count' = [Applications Count]
 
 		formatString: #,0
 
@@ -17,7 +33,7 @@ table _Measures
 
 		formatString: #,0
 
-	measure 'Returns %' = DIVIDE([Returns Count], [Transactions Count])
+	measure 'Returns %' = DIVIDE([Returns Count], [Applications Count])
 
 		formatString: 0.0%
 
@@ -29,9 +45,15 @@ table _Measures
 
 		formatString: +0.0%;-0.0%;0.0%
 
-	measure 'Previous Month Transactions' = CALCULATE([Transactions Count], DATEADD(Calendar[Date], -1, MONTH))
+	measure 'Previous Month Applications' = CALCULATE([Applications Count], DATEADD(Calendar[Date], -1, MONTH))
 
-	measure 'Transactions MoM Growth %' = DIVIDE([Transactions Count] - [Previous Month Transactions], [Previous Month Transactions])
+	measure 'Applications MoM Growth %' = DIVIDE([Applications Count] - [Previous Month Applications], [Previous Month Applications])
+
+		formatString: +0.0%;-0.0%;0.0%
+
+	measure 'Previous Month Sales' = CALCULATE([Sales Count], DATEADD(Calendar[Date], -1, MONTH))
+
+	measure 'Sales MoM Growth %' = DIVIDE([Sales Count] - [Previous Month Sales], [Previous Month Sales])
 
 		formatString: +0.0%;-0.0%;0.0%
 
@@ -45,8 +67,12 @@ table _Measures
 		VAR P = [Revenue MoM Growth %]
 		RETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")
 
-	measure 'Transactions MoM Label' =
-		VAR P = [Transactions MoM Growth %]
+	measure 'Applications MoM Label' =
+		VAR P = [Applications MoM Growth %]
+		RETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")
+
+	measure 'Sales MoM Label' =
+		VAR P = [Sales MoM Growth %]
 		RETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")
 
 	measure 'Average Check MoM Label' =
@@ -71,14 +97,14 @@ table _Measures
 
 	measure 'Insight Region Leader' =
 		VAR T = TOPN(1, ADDCOLUMNS(VALUES(retailpro_sales[region]), "@R", CALCULATE([Total Revenue])), [@R], DESC)
-		RETURN "Регион «" & MAXX(T, retailpro_sales[region]) & "» лидирует по выручке (" & FORMAT(DIVIDE(MAXX(T, [@R]), [Total Revenue]), "0.0%") & ")."
+		RETURN "Регион «" & MAXX(T, retailpro_sales[region]) & "» — основной канал (" & FORMAT(DIVIDE(MAXX(T, [@R]), [Total Revenue]), "0.0%") & " выручки)."
 
 	measure 'Insight Average Check MoM' =
 		VAR P = [Average Check MoM Growth %]
 		VAR D = IF(P >= 0, "вырос", "снизился")
 		RETURN IF(ISBLANK(P), "Недостаточно данных для сравнения среднего чека.", "Средний чек " & D & " на " & FORMAT(ABS(P), "0.0%") & " к пред. месяцу.")
 
-	measure 'Insight Returns' =
-		VAR Target = 0.05
-		VAR Actual = [Returns %]
-		RETURN IF(Actual <= Target, "Доля возвратов/отмен (" & FORMAT(Actual, "0.0%") & ") ниже целевого уровня (5%).", "Доля возвратов/отмен (" & FORMAT(Actual, "0.0%") & ") превышает целевой уровень (5%).")
+	measure 'Insight Conversion' =
+		VAR C = [Conversion %]
+		VAR T = 0.6
+		RETURN IF(C >= T, "Конверсия (" & FORMAT(C, "0.0%") & ") на уровне или выше ориентира (60%).", "Конверсия (" & FORMAT(C, "0.0%") & ") ниже ориентира 60% — нужен разбор отмен и возвратов.")

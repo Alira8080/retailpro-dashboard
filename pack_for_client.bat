@@ -14,9 +14,10 @@ powershell -NoProfile -Command ^
   "$root = Get-Location; $out = Join-Path $root 'RetailPro_Delivery';" ^
   "if (Test-Path $out) { Remove-Item $out -Recurse -Force };" ^
   "New-Item -ItemType Directory -Path $out | Out-Null;" ^
-  "$items = @('prepare_retailpro_data.py','build_powerbi_project.py','role_access.py','dax_measures.txt','power_bi_visuals.txt','requirements.txt','prepare_powerbi.bat','open_powerbi.bat','start_dashboard.bat','dashboard.py','test_all.py');" ^
+  "$items = @('prepare_retailpro_data.py','generate_acceptance_report.py','build_powerbi_project.py','role_access.py','dax_measures.txt','power_bi_visuals.txt','requirements.txt','prepare_powerbi.bat','open_powerbi.bat','start_dashboard.bat','dashboard.py','test_all.py');" ^
   "foreach ($i in $items) { Copy-Item $i (Join-Path $out $i) };" ^
   "Copy-Item powerbi_data $out\powerbi_data -Recurse;" ^
+  "Copy-Item acceptance_package $out\acceptance_package -Recurse;" ^
   "Copy-Item RetailPro $out\RetailPro -Recurse;" ^
   "Copy-Item ИНСТРУКЦИЯ_ЗАКАЗЧИКУ.txt $out\;" ^
   "if (Test-Path sales.csv) { New-Item (Join-Path $out 'data') -ItemType Directory | Out-Null; Copy-Item sales.csv (Join-Path $out 'data\sales.csv') };" ^

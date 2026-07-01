@@ -1,68 +1,78 @@
 table retailpro_sales
-	lineageTag: fb7f8ab6c58e4638b692
+	lineageTag: bf20756b4d8642d9a50c
 
 	column date
 		dataType: dateTime
 		formatString: Short Date
-		lineageTag: 977a1e671302429ab291
+		lineageTag: 67de9f623f784f6dbe9b
 		summarizeBy: none
 		sourceColumn: date
 
 	column region
 		dataType: string
-		lineageTag: e02a343cb24c495295c1
+		lineageTag: a6882091c7fb4537befa
 		summarizeBy: none
 		sourceColumn: region
 
 	column category
 		dataType: string
-		lineageTag: fbc0d6db00ac4fbaa731
+		lineageTag: de48749c463b43ec9dad
 		summarizeBy: none
 		sourceColumn: category
 
 	column manager
 		dataType: string
-		lineageTag: 52a5aaf061ec463dbb5d
+		lineageTag: 31e526ed8955439fb17f
 		summarizeBy: none
 		sourceColumn: manager
 
 	column revenue
 		dataType: double
 		formatString: #,0
-		lineageTag: 97e6f4c7524b402fac4e
+		lineageTag: 7ec12cd93b8b47e8b1cb
 		sourceColumn: revenue
 
 	column quantity
 		dataType: int64
-		lineageTag: d573bb2193b04d1aa72a
+		lineageTag: 2a13125927244a05b66b
 		sourceColumn: quantity
 
 	column discount_amount
 		dataType: double
-		lineageTag: 4a97d8cd537d4df49d0b
+		lineageTag: 89aed19f50854325b83b
 		sourceColumn: discount_amount
 
 	column status
 		dataType: string
-		lineageTag: d7895bb6a5b9417f88f8
+		lineageTag: 84f5d174ce404fca8af7
 		sourceColumn: status
 
 	column returns
 		dataType: int64
-		lineageTag: 09aa245a145347169dca
+		lineageTag: 10d4ae2e15e345509b15
 		sourceColumn: returns
 
 	column week_start
 		dataType: dateTime
 		formatString: Short Date
-		lineageTag: 83c2ed30de2049b09a04
+		lineageTag: 582b1af2501945a7b798
 		summarizeBy: none
 		sourceColumn: week_start
 
 	column is_return_or_cancel
 		dataType: int64
-		lineageTag: 1ce9bb0e122c4efd907d
+		lineageTag: 776e6af644bd47caa31b
 		sourceColumn: is_return_or_cancel
+
+	column is_application
+		dataType: int64
+		lineageTag: dcaba37f4a7649baa72b
+		sourceColumn: is_application
+
+	column is_sale
+		dataType: int64
+		lineageTag: 5c317a417e3443bb8e05
+		sourceColumn: is_sale
 
 	partition retailpro_sales = m
 		mode: import
@@ -70,6 +80,6 @@ table retailpro_sales
 			let
 				Source = Csv.Document(File.Contents("..\..\powerbi_data\retailpro_sales.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.None]),
 				#"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
-				#"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers", {{"date", type date}, {"region", type text}, {"category", type text}, {"manager", type text}, {"revenue", type number}, {"quantity", Int64.Type}, {"discount_amount", type number}, {"status", type text}, {"returns", Int64.Type}, {"week_start", type date}, {"is_return_or_cancel", Int64.Type}})
+				#"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers", {{"date", type date}, {"region", type text}, {"category", type text}, {"manager", type text}, {"revenue", type number}, {"quantity", Int64.Type}, {"discount_amount", type number}, {"status", type text}, {"returns", Int64.Type}, {"week_start", type date}, {"is_return_or_cancel", Int64.Type}, {"is_application", Int64.Type}, {"is_sale", Int64.Type}})
 			in
 				#"Changed Type"

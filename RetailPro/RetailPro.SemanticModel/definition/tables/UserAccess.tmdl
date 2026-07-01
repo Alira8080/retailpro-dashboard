@@ -1,24 +1,24 @@
 table UserAccess
-	lineageTag: 7553a232b2334d899ac2
+	lineageTag: 32ac505ac4f64868a4b2
 
 	column user_login
 		dataType: string
-		lineageTag: 28b5e8b322084c45ae73
+		lineageTag: 7cac504acad049b28976
 		sourceColumn: user_login
 
 	column role
 		dataType: string
-		lineageTag: 5ca50b36a4a64c7ab23d
+		lineageTag: f24976fcd50945599cf3
 		sourceColumn: role
 
 	column manager
 		dataType: string
-		lineageTag: 42a658b1c356410e8d5f
+		lineageTag: 69a75446c02b4d59acf6
 		sourceColumn: manager
 
 	column region
 		dataType: string
-		lineageTag: 4abcde875731460fa301
+		lineageTag: 21baa14fd59946fdb32a
 		sourceColumn: region
 
 	partition UserAccess = m

@@ -55,10 +55,16 @@ def prepare_for_powerbi(df: pd.DataFrame, months: int = 3) -> pd.DataFrame:
     start = (today - pd.DateOffset(months=months)).replace(day=1)
     out = out[(out["date"] >= start) & (out["date"] <= today)].copy()
 
-    # Поля для визуализаций и прозрачных расчётов
+    # Производные поля для визуализаций и прозрачных расчётов
     out["week_start"] = out["date"] - pd.to_timedelta(out["date"].dt.weekday, unit="D")
     out["is_return_or_cancel"] = (
         (out["returns"] > 0) | out["status"].isin(RETURN_STATUS)
+    ).astype(int)
+    out["is_application"] = 1
+    out["is_sale"] = (
+        (out["revenue"] > 0)
+        & (out["returns"] == 0)
+        & (~out["status"].isin(RETURN_STATUS))
     ).astype(int)
 
     return out.reset_index(drop=True)
@@ -73,10 +79,13 @@ def calc_metrics(df: pd.DataFrame) -> dict:
         return {}
 
     total_revenue = df["revenue"].sum()
-    tx_count = len(df)
-    avg_check = total_revenue / tx_count if tx_count else 0
+    applications_count = len(df)
+    sales_count = int(df["is_sale"].sum())
+    sales_revenue = df.loc[df["is_sale"] == 1, "revenue"].sum()
+    conversion_pct = sales_count / applications_count * 100 if applications_count else 0
+    avg_check = sales_revenue / sales_count if sales_count else 0
     returns_count = int(df["is_return_or_cancel"].sum())
-    returns_pct = returns_count / tx_count * 100 if tx_count else 0
+    returns_pct = returns_count / applications_count * 100 if applications_count else 0
 
     cat_rev = df.groupby("category")["revenue"].sum().nlargest(5).sum()
     top5_share = cat_rev / total_revenue * 100 if total_revenue else 0
@@ -93,8 +102,11 @@ def calc_metrics(df: pd.DataFrame) -> dict:
 
     return {
         "total_revenue": total_revenue,
-        "transactions_count": tx_count,
+        "applications_count": applications_count,
+        "sales_count": sales_count,
+        "conversion_pct": conversion_pct,
         "average_check": avg_check,
+        "transactions_count": applications_count,
         "returns_count": returns_count,
         "returns_pct": returns_pct,
         "top5_categories_share_pct": top5_share,
@@ -122,7 +134,7 @@ def build_calendar(df: pd.DataFrame) -> pd.DataFrame:
     return cal
 
 
-def export_powerbi_package(df: pd.DataFrame, out_dir: Path) -> None:
+def export_powerbi_package(df: pd.DataFrame, out_dir: Path, raw: pd.DataFrame | None = None) -> None:
     """Выгрузка набора файлов для Power BI."""
     out_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_dir / "retailpro_sales.csv", index=False, encoding="utf-8-sig")
@@ -131,6 +143,10 @@ def export_powerbi_package(df: pd.DataFrame, out_dir: Path) -> None:
     detail_table(df).to_excel(out_dir / "retailpro_detail.xlsx", index=False, sheet_name="Detail")
     build_user_access(df).to_csv(out_dir / "UserAccess.csv", index=False, encoding="utf-8-sig")
     export_role_datasets(df, out_dir)
+
+    from generate_acceptance_report import export_package
+
+    export_package(df, raw if raw is not None else df, out_dir.parent / "acceptance_package")
 
 
 def main() -> None:
@@ -141,10 +157,11 @@ def main() -> None:
     p.add_argument("--powerbi-dir", default="powerbi_data", help="Папка для Power BI")
     args = p.parse_args()
 
-    df = prepare_for_powerbi(load_data(Path(args.input)))
+    raw = load_data(Path(args.input))
+    df = prepare_for_powerbi(raw)
     df.to_csv(args.output, index=False, encoding="utf-8-sig")
     export_excel(df, Path(args.excel))
-    export_powerbi_package(df, Path(args.powerbi_dir))
+    export_powerbi_package(df, Path(args.powerbi_dir), raw=raw)
 
     print(f"Строк: {len(df)}")
     print(f"Период: {df['date'].min().date()} — {df['date'].max().date()}")

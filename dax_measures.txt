@@ -1,20 +1,31 @@
-// RetailPro — все DAX-меры для дашборда
-// Модель: Calendar[Date] -> retailpro_sales[date] (Many-to-One, Single)
+// RetailPro — DAX-меры (модель: retailpro_sales + Calendar + _Measures)
 
 // ── KPI ──────────────────────────────────────────────────────────
 
 Total Revenue = SUM ( retailpro_sales[revenue] )
 
-Transactions Count = COUNTROWS ( retailpro_sales )
+Applications Count = COUNTROWS ( retailpro_sales )
 
-Average Check = DIVIDE ( [Total Revenue], [Transactions Count] )
+Sales Count = SUM ( retailpro_sales[is_sale] )
+
+Sales Revenue =
+SUMX (
+    retailpro_sales,
+    IF ( retailpro_sales[is_sale] = 1, retailpro_sales[revenue], 0 )
+)
+
+Conversion % = DIVIDE ( [Sales Count], [Applications Count] )
+
+Average Check = DIVIDE ( [Sales Revenue], [Sales Count] )
+
+Transactions Count = [Applications Count]
 
 Returns Count =
 SUMX ( retailpro_sales, IF ( retailpro_sales[is_return_or_cancel] = 1, 1, 0 ) )
 
-Returns % = DIVIDE ( [Returns Count], [Transactions Count] )
+Returns % = DIVIDE ( [Returns Count], [Applications Count] )
 
-// ── MoM (динамика к предыдущему месяцу) ─────────────────────────
+// ── MoM ──────────────────────────────────────────────────────────
 
 Previous Month Revenue =
 CALCULATE ( [Total Revenue], DATEADD ( Calendar[Date], -1, MONTH ) )
@@ -22,11 +33,17 @@ CALCULATE ( [Total Revenue], DATEADD ( Calendar[Date], -1, MONTH ) )
 Revenue MoM Growth % =
 DIVIDE ( [Total Revenue] - [Previous Month Revenue], [Previous Month Revenue] )
 
-Previous Month Transactions =
-CALCULATE ( [Transactions Count], DATEADD ( Calendar[Date], -1, MONTH ) )
+Previous Month Applications =
+CALCULATE ( [Applications Count], DATEADD ( Calendar[Date], -1, MONTH ) )
 
-Transactions MoM Growth % =
-DIVIDE ( [Transactions Count] - [Previous Month Transactions], [Previous Month Transactions] )
+Applications MoM Growth % =
+DIVIDE ( [Applications Count] - [Previous Month Applications], [Previous Month Applications] )
+
+Previous Month Sales =
+CALCULATE ( [Sales Count], DATEADD ( Calendar[Date], -1, MONTH ) )
+
+Sales MoM Growth % =
+DIVIDE ( [Sales Count] - [Previous Month Sales], [Previous Month Sales] )
 
 Previous Month Average Check =
 CALCULATE ( [Average Check], DATEADD ( Calendar[Date], -1, MONTH ) )
@@ -34,7 +51,7 @@ CALCULATE ( [Average Check], DATEADD ( Calendar[Date], -1, MONTH ) )
 Average Check MoM Growth % =
 DIVIDE ( [Average Check] - [Previous Month Average Check], [Previous Month Average Check] )
 
-// ── Доли ────────────────────────────────────────────────────────
+// ── Доли и графики ───────────────────────────────────────────────
 
 Top 5 Categories Share % =
 VAR Top5Rev =
@@ -48,35 +65,21 @@ VAR Top5Rev =
     )
 RETURN DIVIDE ( Top5Rev, [Total Revenue] )
 
-Regions Share % =
-DIVIDE ( [Total Revenue], CALCULATE ( [Total Revenue], ALLSELECTED ( retailpro_sales[region] ) ) )
-
 Top 5 Category Revenue =
 VAR Rank =
     RANKX ( ALLSELECTED ( retailpro_sales[category] ), CALCULATE ( [Total Revenue] ), , DESC, DENSE )
 RETURN IF ( Rank <= 5, [Total Revenue] )
 
-// ── Подписи для KPI-карточек ────────────────────────────────────
+Regions Share % =
+DIVIDE ( [Total Revenue], CALCULATE ( [Total Revenue], ALLSELECTED ( retailpro_sales[region] ) ) )
 
-Revenue MoM Label =
-VAR P = [Revenue MoM Growth %]
-RETURN IF ( ISBLANK ( P ), "н/д", FORMAT ( P, "+0.0%;-0.0%;0.0%" ) & " к пред. мес." )
-
-Transactions MoM Label =
-VAR P = [Transactions MoM Growth %]
-RETURN IF ( ISBLANK ( P ), "н/д", FORMAT ( P, "+0.0%;-0.0%;0.0%" ) & " к пред. мес." )
-
-Average Check MoM Label =
-VAR P = [Average Check MoM Growth %]
-RETURN IF ( ISBLANK ( P ), "н/д", FORMAT ( P, "+0.0%;-0.0%;0.0%" ) & " к пред. мес." )
-
-// ── Блок «Выводы» (текстовые карточки) ──────────────────────────
+// ── Управленческие выводы ────────────────────────────────────────
 
 Insight Region Leader =
 VAR T = TOPN ( 1, ADDCOLUMNS ( VALUES ( retailpro_sales[region] ), "@R", CALCULATE ( [Total Revenue] ) ), [@R], DESC )
 RETURN
-    "Регион «" & MAXX ( T, retailpro_sales[region] ) & "» лидирует по выручке ("
-        & FORMAT ( DIVIDE ( MAXX ( T, [@R] ), [Total Revenue] ), "0.0%" ) & ")."
+    "Регион «" & MAXX ( T, retailpro_sales[region] ) & "» — основной канал ("
+        & FORMAT ( DIVIDE ( MAXX ( T, [@R] ), [Total Revenue] ), "0.0%" ) & " выручки)."
 
 Insight Average Check MoM =
 VAR P = [Average Check MoM Growth %]
@@ -85,10 +88,10 @@ RETURN
     IF ( ISBLANK ( P ), "Недостаточно данных для сравнения среднего чека.",
          "Средний чек " & D & " на " & FORMAT ( ABS ( P ), "0.0%" ) & " к пред. месяцу." )
 
-Insight Returns =
-VAR Target = 0.05
-VAR Actual = [Returns %]
+Insight Conversion =
+VAR C = [Conversion %]
+VAR T = 0.6
 RETURN
-    IF ( Actual <= Target,
-         "Доля возвратов/отмен (" & FORMAT ( Actual, "0.0%" ) & ") ниже целевого уровня (5%).",
-         "Доля возвратов/отмен (" & FORMAT ( Actual, "0.0%" ) & ") превышает целевой уровень (5%)." )
+    IF ( C >= T,
+         "Конверсия (" & FORMAT ( C, "0.0%" ) & ") на уровне или выше ориентира (60%).",
+         "Конверсия (" & FORMAT ( C, "0.0%" ) & ") ниже ориентира 60% — нужен разбор отмен." )

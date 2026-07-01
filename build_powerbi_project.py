@@ -77,18 +77,25 @@ def csv_m_query(relative_csv: str, types: list[tuple[str, str]]) -> str:
 def measure_lines() -> str:
     measures = [
         ("Total Revenue", "SUM(retailpro_sales[revenue])", "#,0"),
-        ("Transactions Count", "COUNTROWS(retailpro_sales)", "#,0"),
-        ("Average Check", "DIVIDE([Total Revenue], [Transactions Count])", "#,0"),
+        ("Applications Count", "COUNTROWS(retailpro_sales)", "#,0"),
+        ("Sales Count", "SUM(retailpro_sales[is_sale])", "#,0"),
+        ("Sales Revenue", "SUMX(retailpro_sales, IF(retailpro_sales[is_sale] = 1, retailpro_sales[revenue], 0))", "#,0"),
+        ("Conversion %", "DIVIDE([Sales Count], [Applications Count])", "0.0%"),
+        ("Average Check", "DIVIDE([Sales Revenue], [Sales Count])", "#,0"),
+        ("Transactions Count", "[Applications Count]", "#,0"),
         ("Returns Count", "SUMX(retailpro_sales, IF(retailpro_sales[is_return_or_cancel] = 1, 1, 0))", "#,0"),
-        ("Returns %", "DIVIDE([Returns Count], [Transactions Count])", "0.0%"),
+        ("Returns %", "DIVIDE([Returns Count], [Applications Count])", "0.0%"),
         ("Previous Month Revenue", "CALCULATE([Total Revenue], DATEADD(Calendar[Date], -1, MONTH))", "#,0"),
         ("Revenue MoM Growth %", "DIVIDE([Total Revenue] - [Previous Month Revenue], [Previous Month Revenue])", "+0.0%;-0.0%;0.0%"),
-        ("Previous Month Transactions", "CALCULATE([Transactions Count], DATEADD(Calendar[Date], -1, MONTH))", None),
-        ("Transactions MoM Growth %", "DIVIDE([Transactions Count] - [Previous Month Transactions], [Previous Month Transactions])", "+0.0%;-0.0%;0.0%"),
+        ("Previous Month Applications", "CALCULATE([Applications Count], DATEADD(Calendar[Date], -1, MONTH))", None),
+        ("Applications MoM Growth %", "DIVIDE([Applications Count] - [Previous Month Applications], [Previous Month Applications])", "+0.0%;-0.0%;0.0%"),
+        ("Previous Month Sales", "CALCULATE([Sales Count], DATEADD(Calendar[Date], -1, MONTH))", None),
+        ("Sales MoM Growth %", "DIVIDE([Sales Count] - [Previous Month Sales], [Previous Month Sales])", "+0.0%;-0.0%;0.0%"),
         ("Previous Month Average Check", "CALCULATE([Average Check], DATEADD(Calendar[Date], -1, MONTH))", None),
         ("Average Check MoM Growth %", "DIVIDE([Average Check] - [Previous Month Average Check], [Previous Month Average Check])", "+0.0%;-0.0%;0.0%"),
         ("Revenue MoM Label", 'VAR P = [Revenue MoM Growth %]\n\t\tRETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")', None),
-        ("Transactions MoM Label", 'VAR P = [Transactions MoM Growth %]\n\t\tRETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")', None),
+        ("Applications MoM Label", 'VAR P = [Applications MoM Growth %]\n\t\tRETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")', None),
+        ("Sales MoM Label", 'VAR P = [Sales MoM Growth %]\n\t\tRETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")', None),
         ("Average Check MoM Label", 'VAR P = [Average Check MoM Growth %]\n\t\tRETURN IF(ISBLANK(P), "н/д", FORMAT(P, "+0.0%;-0.0%;0.0%") & " к пред. мес.")', None),
         (
             "Top 5 Categories Share %",
@@ -103,7 +110,7 @@ def measure_lines() -> str:
         ("Regions Share %", "DIVIDE([Total Revenue], CALCULATE([Total Revenue], ALLSELECTED(retailpro_sales[region])))", "0.0%"),
         (
             "Insight Region Leader",
-            'VAR T = TOPN(1, ADDCOLUMNS(VALUES(retailpro_sales[region]), "@R", CALCULATE([Total Revenue])), [@R], DESC)\n\t\tRETURN "Регион «" & MAXX(T, retailpro_sales[region]) & "» лидирует по выручке (" & FORMAT(DIVIDE(MAXX(T, [@R]), [Total Revenue]), "0.0%") & ")."',
+            'VAR T = TOPN(1, ADDCOLUMNS(VALUES(retailpro_sales[region]), "@R", CALCULATE([Total Revenue])), [@R], DESC)\n\t\tRETURN "Регион «" & MAXX(T, retailpro_sales[region]) & "» — основной канал (" & FORMAT(DIVIDE(MAXX(T, [@R]), [Total Revenue]), "0.0%") & " выручки)."',
             None,
         ),
         (
@@ -112,8 +119,8 @@ def measure_lines() -> str:
             None,
         ),
         (
-            "Insight Returns",
-            'VAR Target = 0.05\n\t\tVAR Actual = [Returns %]\n\t\tRETURN IF(Actual <= Target, "Доля возвратов/отмен (" & FORMAT(Actual, "0.0%") & ") ниже целевого уровня (5%).", "Доля возвратов/отмен (" & FORMAT(Actual, "0.0%") & ") превышает целевой уровень (5%).")',
+            "Insight Conversion",
+            'VAR C = [Conversion %]\n\t\tVAR T = 0.6\n\t\tRETURN IF(C >= T, "Конверсия (" & FORMAT(C, "0.0%") & ") на уровне или выше ориентира (60%).", "Конверсия (" & FORMAT(C, "0.0%") & ") ниже ориентира 60% — нужен разбор отмен и возвратов.")',
             None,
         ),
     ]
@@ -146,6 +153,8 @@ def build_semantic_model() -> None:
         ("returns", "Int64.Type"),
         ("week_start", "type date"),
         ("is_return_or_cancel", "Int64.Type"),
+        ("is_application", "Int64.Type"),
+        ("is_sale", "Int64.Type"),
     ]
     cal_types = [
         ("Date", "type date"),
@@ -326,6 +335,16 @@ def build_semantic_model() -> None:
 \t\tlineageTag: {uid()}
 \t\tsourceColumn: is_return_or_cancel
 
+\tcolumn is_application
+\t\tdataType: int64
+\t\tlineageTag: {uid()}
+\t\tsourceColumn: is_application
+
+\tcolumn is_sale
+\t\tdataType: int64
+\t\tlineageTag: {uid()}
+\t\tsourceColumn: is_sale
+
 \tpartition retailpro_sales = m
 \t\tmode: import
 \t\tsource =
@@ -490,15 +509,16 @@ def build_role_page(cfg: dict) -> str:
         visuals.append(make_visual(uid(), "slicer", sx, 10, 200, 90, slicer_visual("retailpro_sales", "manager")))
 
     kpis = [
-        ("Total Revenue", "Revenue MoM Label", 10),
-        ("Transactions Count", "Transactions MoM Label", 260),
-        ("Average Check", "Average Check MoM Label", 510),
-        ("Top 5 Categories Share %", None, 760),
-        ("Returns Count", None, 1010),
+        ("Total Revenue", "Revenue MoM Label", 10, 195),
+        ("Applications Count", "Applications MoM Label", 210, 195),
+        ("Sales Count", "Sales MoM Label", 410, 195),
+        ("Conversion %", None, 610, 195),
+        ("Average Check", "Average Check MoM Label", 810, 195),
+        ("Returns Count", None, 1010, 195),
     ]
-    for measure, sub, x in kpis:
-        visuals.append(make_visual(uid(), "card", x, 110, 240, 95, card_visual(measure, sub)))
-    visuals.append(make_visual(uid(), "card", 1010, 210, 120, 50, card_visual("Returns %")))
+    for measure, sub, x, w in kpis:
+        visuals.append(make_visual(uid(), "card", x, 110, w, 95, card_visual(measure, sub)))
+    visuals.append(make_visual(uid(), "card", 1010, 210, 120, 45, card_visual("Returns %")))
 
     visuals.append(
         make_visual(
@@ -564,7 +584,7 @@ def build_role_page(cfg: dict) -> str:
             )
         )
 
-    for i, m in enumerate(["Insight Region Leader", "Insight Average Check MoM", "Insight Returns"]):
+    for i, m in enumerate(["Insight Region Leader", "Insight Average Check MoM", "Insight Conversion"]):
         visuals.append(make_visual(uid(), "card", 10 + i * 420, 680, 400, 70, card_visual(m)))
 
     visuals.append(

@@ -1,10 +1,15 @@
 # RetailPro — MVP дашборд продаж
 
-## Скачать
+## Скачать для заказчика
 
-**[RetailPro_Delivery.zip (Release v1.0)](https://github.com/Alira8080/retailpro-dashboard/releases/download/v1.0/RetailPro_Delivery.zip)**
+**[RetailPro_Delivery.zip (Release v1.1)](https://github.com/Alira8080/retailpro-dashboard/releases/download/v1.1/RetailPro_Delivery.zip)**
 
 Репозиторий: https://github.com/Alira8080/retailpro-dashboard
+
+### Состав v1.1
+- Дашборд Power BI (3 роли) + данные
+- **Пакет приёмки** `acceptance_package/` — очистка данных, сверка KPI, фильтры, управленческое резюме
+- Инструкция `ИНСТРУКЦИЯ_ЗАКАЗЧИКУ.txt`
 
 ## Быстрый старт
 

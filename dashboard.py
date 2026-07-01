@@ -24,11 +24,11 @@ from role_access import (
     ROLE_DIRECTOR,
     ROLE_MANAGER,
     ROLE_SUPERVISOR,
+    build_insights_text,
     filter_by_role,
 )
 
 DATA_FILE = Path(__file__).parent / "sales.csv"
-RETURNS_TARGET = 5.0
 ROLES = [ROLE_MANAGER, ROLE_SUPERVISOR, ROLE_DIRECTOR]
 
 
@@ -78,37 +78,19 @@ def kpi_card(label: str, value: str, delta: float | None) -> None:
         st.metric(label, value, f"{delta:+.1f}% к пред. мес.")
 
 
-def build_insights(df: pd.DataFrame) -> list[str]:
-    if df.empty:
-        return ["Нет данных за выбранный период."]
-
-    insights: list[str] = []
-    cur, prev = current_vs_prev_month(df)
-
-    reg = df.groupby("region")["revenue"].sum().sort_values(ascending=False)
-    if reg.sum() > 0:
-        share = reg.iloc[0] / reg.sum() * 100
-        insights.append(f"Регион «{reg.index[0]}» лидирует по выручке ({share:.1f}% от общей).")
-
-    if len(cur) and len(prev):
-        avg_cur = cur["revenue"].sum() / len(cur)
-        avg_prev = prev["revenue"].sum() / len(prev)
-        pct = mom_pct(avg_cur, avg_prev)
-        if pct is not None:
-            word = "вырос" if pct >= 0 else "снизился"
-            insights.append(f"Средний чек {word} на {abs(pct):.1f}% к предыдущему месяцу.")
-
-    returns_pct = df["is_return_or_cancel"].sum() / len(df) * 100 if len(df) else 0
-    if returns_pct <= RETURNS_TARGET:
-        insights.append(
-            f"Доля возвратов/отмен ({returns_pct:.1f}%) ниже целевого уровня ({RETURNS_TARGET:.0f}%)."
-        )
-    else:
-        insights.append(
-            f"Доля возвратов/отмен ({returns_pct:.1f}%) превышает целевой уровень ({RETURNS_TARGET:.0f}%)."
-        )
-
-    return insights[:3]
+def month_kpi(month_df: pd.DataFrame) -> dict[str, float]:
+    if month_df.empty:
+        return {"revenue": 0, "applications": 0, "sales": 0, "conversion": 0, "avg_check": 0}
+    apps = len(month_df)
+    sales = int(month_df["is_sale"].sum())
+    sales_rev = float(month_df.loc[month_df["is_sale"] == 1, "revenue"].sum())
+    return {
+        "revenue": float(month_df["revenue"].sum()),
+        "applications": apps,
+        "sales": sales,
+        "conversion": sales / apps * 100 if apps else 0,
+        "avg_check": sales_rev / sales if sales else 0,
+    }
 
 
 def main() -> None:
@@ -154,6 +136,7 @@ def main() -> None:
         categories = st.multiselect("Категория", sorted(df_all["category"].unique()), default=[])
         managers_f = st.multiselect("Менеджер", managers, default=[], disabled=role == ROLE_MANAGER)
         st.caption("Пустой выбор = все значения в рамках роли")
+        st.caption("Источник/канал = регион (отдельной колонки source в данных нет)")
 
     if isinstance(date_range, tuple) and len(date_range) == 2:
         dr = date_range
@@ -177,25 +160,21 @@ def main() -> None:
 
     metrics = calc_metrics(df)
     cur, prev = current_vs_prev_month(df)
+    cur_k = month_kpi(cur)
+    prev_k = month_kpi(prev)
 
-    # KPI с MoM: значение за последний месяц в выбранном периоде (по ТЗ)
-    rev_cur = cur["revenue"].sum() if len(cur) else 0
-    rev_prev = prev["revenue"].sum() if len(prev) else 0
-    tx_cur = len(cur)
-    tx_prev = len(prev)
-    avg_cur = rev_cur / tx_cur if tx_cur else 0
-    avg_prev = rev_prev / tx_prev if tx_prev else 0
-
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
-        kpi_card("Выручка", f"{rev_cur:,.0f} ₽", mom_pct(rev_cur, rev_prev))
+        kpi_card("Выручка", f"{cur_k['revenue']:,.0f} ₽", mom_pct(cur_k["revenue"], prev_k["revenue"]))
     with c2:
-        kpi_card("Транзакции", f"{tx_cur:,}", mom_pct(tx_cur, tx_prev))
+        kpi_card("Заявки", f"{cur_k['applications']:,}", mom_pct(cur_k["applications"], prev_k["applications"]))
     with c3:
-        kpi_card("Средний чек", f"{avg_cur:,.0f} ₽", mom_pct(avg_cur, avg_prev))
+        kpi_card("Продажи", f"{cur_k['sales']:,}", mom_pct(cur_k["sales"], prev_k["sales"]))
     with c4:
-        st.metric("Топ-5 категорий", f"{metrics.get('top5_categories_share_pct', 0):.1f}%")
+        kpi_card("Конверсия", f"{cur_k['conversion']:.1f}%", mom_pct(cur_k["conversion"], prev_k["conversion"]))
     with c5:
+        kpi_card("Средний чек", f"{cur_k['avg_check']:,.0f} ₽", mom_pct(cur_k["avg_check"], prev_k["avg_check"]))
+    with c6:
         st.metric(
             "Возвраты/отмены",
             f"{metrics.get('returns_count', 0):,} шт.",
@@ -249,8 +228,8 @@ def main() -> None:
         fig4 = px.bar(mgr, x="revenue", y="manager", orientation="h", title="Выручка по менеджерам региона")
         st.plotly_chart(fig4, use_container_width=True)
 
-    st.subheader("Выводы")
-    for text in build_insights(df):
+    st.subheader("Выводы (управленческое резюме)")
+    for text in build_insights_text(df):
         st.info(text)
 
     st.subheader("Детализация")

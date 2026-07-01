@@ -15,6 +15,51 @@ import pandas as pd
 ROLE_MANAGER = "Менеджер"
 ROLE_SUPERVISOR = "Руководитель"
 ROLE_DIRECTOR = "Коммерческий директор"
+CONVERSION_TARGET = 60.0
+
+
+def build_insights_text(df: "pd.DataFrame") -> list[str]:
+    """2–3 управленческих наблюдения для пакета приёмки и дашборда."""
+    import pandas as pd
+
+    if df.empty:
+        return ["Нет данных за выбранный период."]
+
+    insights: list[str] = []
+    reg = df.groupby("region")["revenue"].sum().sort_values(ascending=False)
+    if reg.sum() > 0:
+        share = reg.iloc[0] / reg.sum() * 100
+        insights.append(
+            f"Регион «{reg.index[0]}» — основной канал продаж ({share:.1f}% выручки); "
+            f"имеет смысл усилить присутствие в отстающих регионах."
+        )
+
+    last = df["date"].max().to_period("M")
+    cur = df[df["date"].dt.to_period("M") == last]
+    prev = df[df["date"].dt.to_period("M") == last - 1]
+    if len(cur) and len(prev):
+        avg_cur = cur.loc[cur["is_sale"] == 1, "revenue"].sum() / max(cur["is_sale"].sum(), 1)
+        avg_prev = prev.loc[prev["is_sale"] == 1, "revenue"].sum() / max(prev["is_sale"].sum(), 1)
+        if avg_prev:
+            pct = (avg_cur - avg_prev) / avg_prev * 100
+            word = "вырос" if pct >= 0 else "снизился"
+            insights.append(
+                f"Средний чек {word} на {abs(pct):.1f}% к пред. месяцу — "
+                f"{'позитивная' if pct >= 0 else 'негативная'} динамика для маржинальности."
+            )
+
+    conv = df["is_sale"].sum() / len(df) * 100 if len(df) else 0
+    if conv >= CONVERSION_TARGET:
+        insights.append(
+            f"Конверсия заявок в продажи ({conv:.1f}%) на уровне или выше ориентира ({CONVERSION_TARGET:.0f}%)."
+        )
+    else:
+        insights.append(
+            f"Конверсия ({conv:.1f}%) ниже ориентира {CONVERSION_TARGET:.0f}% — "
+            f"рекомендуется разбор отмен и возвратов по менеджерам."
+        )
+
+    return insights[:3]
 
 
 def build_user_access(df: pd.DataFrame) -> pd.DataFrame:
