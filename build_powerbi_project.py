@@ -123,6 +123,12 @@ def measure_lines() -> str:
             'VAR C = [Conversion %]\n\t\tVAR T = 0.6\n\t\tRETURN IF(C >= T, "Конверсия (" & FORMAT(C, "0.0%") & ") на уровне или выше ориентира (60%).", "Конверсия (" & FORMAT(C, "0.0%") & ") ниже ориентира 60% — нужен разбор отмен и возвратов.")',
             None,
         ),
+        (
+            "Management Summary",
+            '[Insight Region Leader] & UNICHAR(10) & UNICHAR(10) & [Insight Average Check MoM] & UNICHAR(10) & UNICHAR(10) & [Insight Conversion]',
+            None,
+        ),
+        ("Insight Section Title", '"Управленческое резюме"', None),
     ]
     lines: list[str] = []
     for name, expr, fmt in measures:
@@ -584,12 +590,17 @@ def build_role_page(cfg: dict) -> str:
             )
         )
 
-    for i, m in enumerate(["Insight Region Leader", "Insight Average Check MoM", "Insight Conversion"]):
-        visuals.append(make_visual(uid(), "card", 10 + i * 420, 680, 400, 70, card_visual(m)))
+    visuals.append(
+        make_visual(
+            uid(), "card", 10, 665, 200, 35,
+            card_visual("Insight Section Title"),
+        )
+    )
+    visuals.append(make_visual(uid(), "card", 10, 700, 1250, 120, card_visual("Management Summary")))
 
     visuals.append(
         make_visual(
-            uid(), "tableEx", 10, 760, 1250, 300,
+            uid(), "tableEx", 10, 830, 1250, 230,
             {
                 "query": {
                     "queryState": {

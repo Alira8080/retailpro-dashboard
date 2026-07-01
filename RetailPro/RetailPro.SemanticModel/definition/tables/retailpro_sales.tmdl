@@ -1,77 +1,77 @@
 table retailpro_sales
-	lineageTag: bf20756b4d8642d9a50c
+	lineageTag: 2b671052339e4478a47e
 
 	column date
 		dataType: dateTime
 		formatString: Short Date
-		lineageTag: 67de9f623f784f6dbe9b
+		lineageTag: 9a4fd6233bfc432d8542
 		summarizeBy: none
 		sourceColumn: date
 
 	column region
 		dataType: string
-		lineageTag: a6882091c7fb4537befa
+		lineageTag: a948fafaeeea4d469b1d
 		summarizeBy: none
 		sourceColumn: region
 
 	column category
 		dataType: string
-		lineageTag: de48749c463b43ec9dad
+		lineageTag: cebcf1f60831454f9802
 		summarizeBy: none
 		sourceColumn: category
 
 	column manager
 		dataType: string
-		lineageTag: 31e526ed8955439fb17f
+		lineageTag: 2c7da1027e714478b49e
 		summarizeBy: none
 		sourceColumn: manager
 
 	column revenue
 		dataType: double
 		formatString: #,0
-		lineageTag: 7ec12cd93b8b47e8b1cb
+		lineageTag: 31bf286621c74becbda7
 		sourceColumn: revenue
 
 	column quantity
 		dataType: int64
-		lineageTag: 2a13125927244a05b66b
+		lineageTag: a1b3227960ec46669c25
 		sourceColumn: quantity
 
 	column discount_amount
 		dataType: double
-		lineageTag: 89aed19f50854325b83b
+		lineageTag: 9343cdaac06a43bfb172
 		sourceColumn: discount_amount
 
 	column status
 		dataType: string
-		lineageTag: 84f5d174ce404fca8af7
+		lineageTag: d979a5f252f84fdea56b
 		sourceColumn: status
 
 	column returns
 		dataType: int64
-		lineageTag: 10d4ae2e15e345509b15
+		lineageTag: b09ef75e90a947b69508
 		sourceColumn: returns
 
 	column week_start
 		dataType: dateTime
 		formatString: Short Date
-		lineageTag: 582b1af2501945a7b798
+		lineageTag: dc3fb30f8c784871b880
 		summarizeBy: none
 		sourceColumn: week_start
 
 	column is_return_or_cancel
 		dataType: int64
-		lineageTag: 776e6af644bd47caa31b
+		lineageTag: de623f6fe4c442a8a3b7
 		sourceColumn: is_return_or_cancel
 
 	column is_application
 		dataType: int64
-		lineageTag: dcaba37f4a7649baa72b
+		lineageTag: fa320cc9c4ac427abe59
 		sourceColumn: is_application
 
 	column is_sale
 		dataType: int64
-		lineageTag: 5c317a417e3443bb8e05
+		lineageTag: c49ae3c43bca4d489494
 		sourceColumn: is_sale
 
 	partition retailpro_sales = m

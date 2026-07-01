@@ -2,14 +2,14 @@
 
 ## Скачать для заказчика
 
-**[RetailPro_Delivery.zip (Release v1.1)](https://github.com/Alira8080/retailpro-dashboard/releases/download/v1.1/RetailPro_Delivery.zip)**
+**[RetailPro_Delivery.zip (Release v1.2)](https://github.com/Alira8080/retailpro-dashboard/releases/download/v1.2/RetailPro_Delivery.zip)**
 
 Репозиторий: https://github.com/Alira8080/retailpro-dashboard
 
-### Состав v1.1
-- Дашборд Power BI (3 роли) + данные
-- **Пакет приёмки** `acceptance_package/` — очистка данных, сверка KPI, фильтры, управленческое резюме
-- Инструкция `ИНСТРУКЦИЯ_ЗАКАЗЧИКУ.txt`
+### Состав v1.2
+- **ОПИСАНИЕ_РЕЗУЛЬТАТА.txt** в корне архива — подтверждение KPI, фильтров, управленческое резюме
+- **НАЧНИТЕ_ЗДЕСЬ.txt** — точка входа для приёмки
+- Пакет приёмки `acceptance_package/` с автотестом фильтров
 
 ## Быстрый старт
 

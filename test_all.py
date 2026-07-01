@@ -146,6 +146,9 @@ def main() -> int:
         "02_ПРОВЕРКА_KPI.txt",
         "03_ФИЛЬТРЫ_И_ГРАФИКИ.txt",
         "04_УПРАВЛЕНЧЕСКОЕ_РЕЗЮМЕ.txt",
+        "05_ПРОВЕРКА_ФИЛЬТРОВ.txt",
+        "ОПИСАНИЕ_РЕЗУЛЬТАТА.txt",
+        "НАЧНИТЕ_ЗДЕСЬ.txt",
         "ПАКЕТ_ПРИЕМКИ.txt",
         "acceptance_summary.json",
     ):
@@ -161,6 +164,31 @@ def main() -> int:
     else:
         ok("Сверка KPI в пакете приёмки: OK")
 
+    for root_doc in ("ОПИСАНИЕ_РЕЗУЛЬТАТА.txt", "НАЧНИТЕ_ЗДЕСЬ.txt"):
+        p = ROOT / root_doc
+        if not p.exists() or p.stat().st_size == 0:
+            fail(f"Нет корневого файла: {root_doc}")
+        else:
+            ok(root_doc)
+
+    desc = (ROOT / "ОПИСАНИЕ_РЕЗУЛЬТАТА.txt").read_text(encoding="utf-8")
+    for phrase in (
+        "ВСЕ 5 ОБЯЗАТЕЛЬНЫХ KPI",
+        "УПРАВЛЕНЧЕСКОЕ РЕЗЮМЕ",
+        "НАБЛЮДЕНИЕ 1",
+        "ПОДТВЕРЖДЕНИЕ ФИЛЬТРОВ",
+    ):
+        if phrase not in desc:
+            fail(f"ОПИСАНИЕ_РЕЗУЛЬТАТА: нет «{phrase}»")
+        else:
+            ok(f"ОПИСАНИЕ: {phrase}")
+
+    filt_doc = (acc_dir / "05_ПРОВЕРКА_ФИЛЬТРОВ.txt").read_text(encoding="utf-8")
+    if "ОШИБКА" in filt_doc or "РАСХОЖДЕНИЕ" in filt_doc:
+        fail("Автотест фильтров не пройден")
+    else:
+        ok("Автотест фильтров: OK")
+
     # 7. DAX файл
     dax = ROOT / "dax_measures.txt"
     required_measures = [
@@ -168,6 +196,7 @@ def main() -> int:
         "Average Check", "Returns Count", "Returns %", "Previous Month Revenue",
         "Revenue MoM Growth %", "Top 5 Categories Share %", "Regions Share %",
         "Insight Region Leader", "Insight Average Check MoM", "Insight Conversion",
+        "Management Summary",
     ]
     dax_text = dax.read_text(encoding="utf-8")
     for measure in required_measures:

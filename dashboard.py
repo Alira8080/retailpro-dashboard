@@ -24,6 +24,7 @@ from role_access import (
     ROLE_DIRECTOR,
     ROLE_MANAGER,
     ROLE_SUPERVISOR,
+    build_detailed_insights,
     build_insights_text,
     filter_by_role,
 )
@@ -228,9 +229,12 @@ def main() -> None:
         fig4 = px.bar(mgr, x="revenue", y="manager", orientation="h", title="Выручка по менеджерам региона")
         st.plotly_chart(fig4, use_container_width=True)
 
-    st.subheader("Выводы (управленческое резюме)")
-    for text in build_insights_text(df):
-        st.info(text)
+    st.subheader("Управленческое резюме")
+    for text in build_detailed_insights(df):
+        st.markdown(text.replace("\n", "\n\n"))
+    with st.expander("Краткая версия"):
+        for text in build_insights_text(df):
+            st.info(text)
 
     st.subheader("Детализация")
     detail = detail_table(df)

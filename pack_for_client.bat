@@ -20,6 +20,8 @@ powershell -NoProfile -Command ^
   "Copy-Item acceptance_package $out\acceptance_package -Recurse;" ^
   "Copy-Item RetailPro $out\RetailPro -Recurse;" ^
   "Copy-Item ИНСТРУКЦИЯ_ЗАКАЗЧИКУ.txt $out\;" ^
+  "Copy-Item ОПИСАНИЕ_РЕЗУЛЬТАТА.txt $out\;" ^
+  "Copy-Item НАЧНИТЕ_ЗДЕСЬ.txt $out\;" ^
   "if (Test-Path sales.csv) { New-Item (Join-Path $out 'data') -ItemType Directory | Out-Null; Copy-Item sales.csv (Join-Path $out 'data\sales.csv') };" ^
   "$zip = Join-Path $root 'RetailPro_Delivery.zip';" ^
   "if (Test-Path $zip) { Remove-Item $zip -Force };" ^

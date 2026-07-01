@@ -95,3 +95,10 @@ RETURN
     IF ( C >= T,
          "Конверсия (" & FORMAT ( C, "0.0%" ) & ") на уровне или выше ориентира (60%).",
          "Конверсия (" & FORMAT ( C, "0.0%" ) & ") ниже ориентира 60% — нужен разбор отмен." )
+
+Management Summary =
+[Insight Region Leader] & UNICHAR ( 10 ) & UNICHAR ( 10 )
+    & [Insight Average Check MoM] & UNICHAR ( 10 ) & UNICHAR ( 10 )
+    & [Insight Conversion]
+
+Insight Section Title = "Управленческое резюме"

@@ -1,5 +1,5 @@
 table _Measures
-	lineageTag: 1ee95d74862f4ee390dc
+	lineageTag: 99626687745947f5a8e4
 
 	measure 'Total Revenue' = SUM(retailpro_sales[revenue])
 
@@ -108,3 +108,7 @@ table _Measures
 		VAR C = [Conversion %]
 		VAR T = 0.6
 		RETURN IF(C >= T, "Конверсия (" & FORMAT(C, "0.0%") & ") на уровне или выше ориентира (60%).", "Конверсия (" & FORMAT(C, "0.0%") & ") ниже ориентира 60% — нужен разбор отмен и возвратов.")
+
+	measure 'Management Summary' = [Insight Region Leader] & UNICHAR(10) & UNICHAR(10) & [Insight Average Check MoM] & UNICHAR(10) & UNICHAR(10) & [Insight Conversion]
+
+	measure 'Insight Section Title' = "Управленческое резюме"

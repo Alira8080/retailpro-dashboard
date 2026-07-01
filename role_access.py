@@ -62,6 +62,74 @@ def build_insights_text(df: "pd.DataFrame") -> list[str]:
     return insights[:3]
 
 
+def build_detailed_insights(df: "pd.DataFrame") -> list[str]:
+    """Развёрнутые управленческие наблюдения (2–3 абзаца) для заказчика."""
+    if df.empty:
+        return ["Нет данных за выбранный период для формирования выводов."]
+
+    from prepare_retailpro_data import calc_metrics
+
+    m = calc_metrics(df)
+    observations: list[str] = []
+
+    reg = df.groupby("region")["revenue"].sum().sort_values(ascending=False)
+    if reg.sum() > 0:
+        leader = reg.index[0]
+        laggard = reg.index[-1]
+        leader_rev = float(reg.iloc[0])
+        laggard_rev = float(reg.iloc[-1])
+        total_rev = float(reg.sum())
+        leader_share = leader_rev / total_rev * 100
+        laggard_share = laggard_rev / total_rev * 100
+        observations.append(
+            f"НАБЛЮДЕНИЕ 1. Структура продаж по каналам (регионам)\n\n"
+            f"Регион «{leader}» — ведущий канал: {leader_share:.1f}% выручки "
+            f"({leader_rev:,.0f} ₽ из {total_rev:,.0f} ₽ за период). "
+            f"Наименее результативный регион — «{laggard}» ({laggard_share:.1f}%). "
+            f"Концентрация спроса в одном регионе создаёт зависимость от локального рынка. "
+            f"Рекомендация: усилить продвижение и работу с партнёрами в отстающих регионах, "
+            f"чтобы сбалансировать географию продаж."
+        )
+
+    last = df["date"].max().to_period("M")
+    cur = df[df["date"].dt.to_period("M") == last]
+    prev = df[df["date"].dt.to_period("M") == last - 1]
+    if len(cur) and len(prev):
+        avg_cur = cur.loc[cur["is_sale"] == 1, "revenue"].sum() / max(cur["is_sale"].sum(), 1)
+        avg_prev = prev.loc[prev["is_sale"] == 1, "revenue"].sum() / max(prev["is_sale"].sum(), 1)
+        if avg_prev:
+            pct = (avg_cur - avg_prev) / avg_prev * 100
+            direction = "рост" if pct >= 0 else "снижение"
+            observations.append(
+                f"НАБЛЮДЕНИЕ 2. Динамика среднего чека\n\n"
+                f"Средний чек за последний месяц — {avg_cur:,.0f} ₽ "
+                f"({direction} на {abs(pct):.1f}% к предыдущему месяцу, было {avg_prev:,.0f} ₽). "
+                f"{'Положительная динамика поддерживает маржинальность и указывает на успешные допродажи или сдвиг в сторону более дорогих категорий.' if pct >= 0 else 'Снижение среднего чека сигнализирует о давлении на цену или росте доли бюджетных позиций — стоит проверить скидочную политику по категориям.'}"
+            )
+
+    conv = float(m.get("conversion_pct", 0))
+    sales = int(m.get("sales_count", 0))
+    apps = int(m.get("applications_count", 0))
+    returns_pct = float(m.get("returns_pct", 0))
+    if conv >= CONVERSION_TARGET:
+        observations.append(
+            f"НАБЛЮДЕНИЕ 3. Конверсия заявок в продажи\n\n"
+            f"Конверсия составляет {conv:.1f}% ({sales} продаж из {apps} заявок) — "
+            f"на уровне или выше целевого ориентира {CONVERSION_TARGET:.0f}%. "
+            f"Воронка работает стабильно; приоритет — удержание текущего уровня сервиса и сокращение возвратов ({returns_pct:.1f}%)."
+        )
+    else:
+        observations.append(
+            f"НАБЛЮДЕНИЕ 3. Конверсия заявок в продажи\n\n"
+            f"Конверсия {conv:.1f}% ({sales} продаж из {apps} заявок) — ниже ориентира {CONVERSION_TARGET:.0f}%. "
+            f"Доля возвратов и отмен — {returns_pct:.1f}%. "
+            f"Рекомендация: провести разбор отмен по менеджерам и категориям, выявить типовые причины потери сделок "
+            f"и скорректировать скрипты продаж в проблемных сегментах."
+        )
+
+    return observations[:3]
+
+
 def build_user_access(df: pd.DataFrame) -> pd.DataFrame:
     """Таблица учётных записей для RLS в Power BI."""
     rows: list[dict] = []
