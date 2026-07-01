@@ -2,7 +2,9 @@
 
 ## Скачать
 
-**[RetailPro_Delivery.zip](https://github.com/Alira8080/retailpro-dashboard/releases/latest/download/RetailPro_Delivery.zip)** — полный пакет для заказчика.
+**[RetailPro_Delivery.zip (Release v1.0)](https://github.com/Alira8080/retailpro-dashboard/releases/download/v1.0/RetailPro_Delivery.zip)**
+
+Репозиторий: https://github.com/Alira8080/retailpro-dashboard
 
 ## Быстрый старт
 
